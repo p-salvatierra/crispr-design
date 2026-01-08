@@ -4,7 +4,8 @@ Functions to score CRISPR guide RNA efficiency
 
 import pandas as pd
 import numpy as np
-
+import matplotlib.pyplot as plt
+import seaborn as sns
 
 def calculate_gc_content(sequence):
     """
@@ -218,6 +219,76 @@ def get_top_guides(scored_df, n=10, min_score=50):
     # Return top N
     return filtered.head(n)
 
+
+def visualize_guide_scores(scored_df, top_n=20):
+    """
+    Create visualizations of guide RNA scores.
+    
+    Args:
+        scored_df (pd.DataFrame): Scored guides
+        top_n (int): Number of top guides to show
+    """
+    # Get top guides
+    top_guides = scored_df.head(top_n)
+    
+    # Create figure with subplots
+    fig, axes = plt.subplots(2, 2, figsize=(15, 12))
+    
+    # 1. Efficiency scores bar plot
+    ax1 = axes[0, 0]
+    ax1.barh(range(len(top_guides)), top_guides['efficiency_score'])
+    ax1.set_yticks(range(len(top_guides)))
+    ax1.set_yticklabels([f"Guide {i+1}" for i in range(len(top_guides))])
+    ax1.set_xlabel('Efficiency Score')
+    ax1.set_title(f'Top {top_n} Guide RNA Efficiency Scores')
+    ax1.axvline(x=50, color='red', linestyle='--', alpha=0.5, label='Min threshold')
+    ax1.legend()
+    ax1.invert_yaxis()
+    
+    # 2. GC content distribution
+    ax2 = axes[0, 1]
+    ax2.hist(scored_df['gc_content'], bins=20, edgecolor='black', alpha=0.7)
+    ax2.axvline(x=40, color='green', linestyle='--', alpha=0.5, label='Optimal range')
+    ax2.axvline(x=60, color='green', linestyle='--', alpha=0.5)
+    ax2.set_xlabel('GC Content (%)')
+    ax2.set_ylabel('Number of Guides')
+    ax2.set_title('GC Content Distribution')
+    ax2.legend()
+    
+    # 3. Score vs GC content scatter
+    ax3 = axes[1, 0]
+    colors = ['red' if pt else 'blue' for pt in scored_df['has_poly_t']]
+    ax3.scatter(scored_df['gc_content'], scored_df['efficiency_score'], 
+                c=colors, alpha=0.6, s=50)
+    ax3.set_xlabel('GC Content (%)')
+    ax3.set_ylabel('Efficiency Score')
+    ax3.set_title('Efficiency Score vs GC Content')
+    ax3.axhline(y=50, color='gray', linestyle='--', alpha=0.3)
+    ax3.axvline(x=40, color='gray', linestyle='--', alpha=0.3)
+    ax3.axvline(x=60, color='gray', linestyle='--', alpha=0.3)
+    
+    # Legend for colors
+    from matplotlib.patches import Patch
+    legend_elements = [Patch(facecolor='blue', label='No Poly-T'),
+                      Patch(facecolor='red', label='Has Poly-T')]
+    ax3.legend(handles=legend_elements)
+    
+    # 4. Position distribution
+    ax4 = axes[1, 1]
+    forward = scored_df[scored_df['strand'] == '+']
+    reverse = scored_df[scored_df['strand'] == '-']
+    
+    ax4.scatter(forward['pam_site'], forward['efficiency_score'], 
+                label='Forward (+)', alpha=0.6, s=50)
+    ax4.scatter(reverse['pam_site'], reverse['efficiency_score'], 
+                label='Reverse (-)', alpha=0.6, s=50)
+    ax4.set_xlabel('Position in Sequence')
+    ax4.set_ylabel('Efficiency Score')
+    ax4.set_title('Guide Score vs Position')
+    ax4.legend()
+    
+    plt.tight_layout()
+    return fig
 
 # Test the functions
 if __name__ == "__main__":
