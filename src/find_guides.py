@@ -18,7 +18,7 @@ def find_pam_sites(sequence, pam_sequence="GG"):
     Returns:
         list: Positions of PAM sites
     """
-    sequence = str(sequence).upper()
+    sequence = str(sequence).upper() 
     pam_sites = []
     
     # Search for PAM (NGG = any base + GG)
